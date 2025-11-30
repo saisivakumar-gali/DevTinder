@@ -8,12 +8,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev":"nodemon src/app.js",
-    "start":"node src/app.js"
-
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js"
   },
   "dependencies": {
-    "express": "^5.1.0"
-  },
-  "devDependencies": {}
+    "express": "^5.1.0",
+    "mongoose": "^9.0.0"
+  }
 }
