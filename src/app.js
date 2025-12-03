@@ -4,6 +4,25 @@ const app=express();
 const User=require("./models/user");
 
 app.use(express.json());
+
+app.get("/user",async(req,res)=>{
+    const userEmail=req.body.emailId;
+    try{
+        const user=await User.find({emailId:userEmail});
+        if(user.length===0){
+            res.status(404).send("user not found");
+        }else{
+
+            res.send(user);
+        }
+    }
+    catch(err){
+        res.status(400).send("something went wrong");
+    }
+});
+
+
+
 app.post("/signup",async (req,res)=>{
 const user=new User(req.body);
 try{
@@ -14,6 +33,17 @@ res.send("user added successfully");
 }
 
 });
+
+app.get("/feed",async (req,res)=>{
+    try{
+        const users=await User.find({});
+        res.send(users);
+    }
+    catch(err){
+        res.status(400).send("something went wrong");
+    }
+});
+
 
 
 
