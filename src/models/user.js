@@ -1,4 +1,5 @@
 const mongoose=require("mongoose");
+const validator=require("validator");
 const userSchema=new mongoose.Schema({
     firstName:{
         type:String,
@@ -17,11 +18,21 @@ const userSchema=new mongoose.Schema({
         unique:true,
         lowercase:true,
         trim:true,
+        validate(value){
+            if(!validator.isEmail(value)){
+                throw new Error("Invalid Email address");
+            }
+        }
         
     },
     password:{
         type:String,
         required:true,
+         validate(value){
+            if(!validator.isStrongPassword(value)){
+                throw new Error("Enter strong password");
+            }
+        }
     },
     age:{
         type:Number,
@@ -31,13 +42,18 @@ const userSchema=new mongoose.Schema({
         type:String,
         validate(value){
             if(!["male","female","others"].includes(value)){
-                throw new error("Gender data is not valid");
+                throw new Error("Gender data is not valid");
             }
         }
     },
     photoUrl:{
         type:String,
-        default:"https://imgs.search.brave.com/pBrctCO6SvjGyV8ZowZmmDovuKag1Nfgr6rgfepyL-s/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pLnBp/bmltZy5jb20vb3Jp/Z2luYWxzLzZlLzU5/Lzk1LzZlNTk5NTAx/MjUyYzIzYmNmMDI2/NTg2MTdiMjljODk0/LmpwZw"
+        default:"https://imgs.search.brave.com/pBrctCO6SvjGyV8ZowZmmDovuKag1Nfgr6rgfepyL-s/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pLnBp/bmltZy5jb20vb3Jp/Z2luYWxzLzZlLzU5/Lzk1LzZlNTk5NTAx/MjUyYzIzYmNmMDI2/NTg2MTdiMjljODk0/LmpwZw",
+         validate(value){
+            if(!validator.isURL(value)){
+                throw new Error("Invalid photo URL:"+value);
+            }
+        }
     },
 
     about:{
