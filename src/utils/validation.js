@@ -22,7 +22,33 @@ const validateEditProfileData=(req)=>{
     return isEditallowed;
 }
 
+const validatePasswordData = (req) => {
+  const { oldPassword, newPassword } = req.body;
+
+ 
+  if (!oldPassword) {
+    throw new Error("Old password is required");
+  }
+
+  if (!newPassword) {
+    throw new Error("New password is required");
+  }
+
+  
+  if (newPassword.length < 6) {
+    throw new Error("New password must be at least 6 characters long");
+  }
+
+  
+  if (oldPassword === newPassword) {
+    throw new Error("New password cannot be same as old password");
+  }
+
+  return true;
+};
+
 module.exports={
     validateSignUpData,
     validateEditProfileData,
+    validatePasswordData,
 }
