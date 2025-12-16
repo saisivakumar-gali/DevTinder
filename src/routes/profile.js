@@ -1,6 +1,6 @@
 const express=require("express");
 const profileRouter=express.Router();
-const {userAuth}=require("../middlewares/auth");
+const userAuth=require("../middlewares/auth");
 const {validateEditProfileData}=require("../utils/validation");
 const {validatePasswordData}=require("../utils/validation");
 const bcrypt=require("bcrypt");

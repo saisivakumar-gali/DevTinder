@@ -21,6 +21,4 @@ catch(err){
 }
 };
 
-module.exports={
-userAuth,
-};
+module.exports=userAuth;

@@ -7,7 +7,7 @@ const bcrypt=require("bcrypt");
 const validator=require("validator");
 const cookieParser=require("cookie-parser");
 const jwt=require("jsonwebtoken");
-const {userAuth}=require("./middlewares/auth");
+
 
 
 app.use(express.json());
@@ -16,26 +16,14 @@ app.use(cookieParser());
 const authRouter=require("./routes/auth");
 const profileRouter=require("./routes/profile");
 const requestRouter=require("./routes/request");
+const userRouter = require("./routes/user");
 
 app.use("/",authRouter);
 app.use("/",profileRouter);
 app.use("/",requestRouter);
+app.use("/",userRouter);
 
-app.get("/user",async(req,res)=>{
-    const userEmail=req.body.emailId;
-    try{
-        const user=await User.find({emailId:userEmail});
-        if(user.length===0){
-            res.status(404).send("user not found");
-        }else{
 
-            res.send(user);
-        }
-    }
-    catch(err){
-        res.status(400).send("something went wrong");
-    }
-});
 
 
 connectDB().then(()=>{
