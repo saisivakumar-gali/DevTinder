@@ -1,19 +1,17 @@
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
+  // If already connected, don't connect again
+  if (mongoose.connection.readyState >= 1) return;
+
   try {
-    // Check if connection is already established
-    if (mongoose.connection.readyState >= 1) {
-      return;
-    }
-    
-    // Use the variable name you defined in Vercel settings
-    await mongoose.connect(process.env.DB_CONNECTION_SECRET);
+    await mongoose.connect(process.env.DB_CONNECTION_SECRET, {
+      serverSelectionTimeoutMS: 5000, // Fails fast if IP/URI is wrong
+    });
     console.log("MongoDB Connected Successfully");
   } catch (err) {
     console.error("Database Connection Error:", err.message);
-    // Throw error so Vercel can catch it and show in logs
-    throw err;
+    throw err; // Vercel needs this to log the failure
   }
 };
 
