@@ -4,7 +4,8 @@ const ConnectionRequest = require("../models/connectionRequest");
 const sendRequestEmail = require("../utils/sendEmail");
 
 // IMPORTANT: Path must match your vercel.json configuration
-router.get("/api/cron/send-reminders", async (req, res) => {
+router.get("/send-reminders", async (req, res) => {
+  res.send("Cron logic triggered!");
   // 1. Security Check: Only allow Vercel's Cron to call this
   const authHeader = req.headers.authorization;
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
