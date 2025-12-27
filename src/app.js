@@ -22,7 +22,7 @@ app.use(
     origin: "https://dev-tinder-web-dusky.vercel.app",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization","Cookie"],
   })
 );
 
