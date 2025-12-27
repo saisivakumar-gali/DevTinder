@@ -31,7 +31,7 @@ try{
 
 }
 catch(err){
-        res.status(400).send("something went wrong");
+        res.status(400).json({error:err.message});
     }
 
 });
