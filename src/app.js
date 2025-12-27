@@ -14,7 +14,7 @@ app.use(cookieParser());
 // 2. CORS Configuration
 app.use(
   cors({
-    // Make sure this matches your FRONTEND Vercel URL exactly
+  
     origin: "https://dev-tinder-web-dusky.vercel.app",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
@@ -33,8 +33,7 @@ app.use("/", profileRouter);
 app.use("/", requestRouter);
 app.use("/", userRouter);
 
-// 4. Database Connection & Server Startup
-// For Vercel (Production), we just call connectDB()
+
 connectDB()
   .then(() => {
     console.log("Database connection established");
@@ -43,7 +42,7 @@ connectDB()
     console.error("Database connection failed:", err.message);
   });
 
-// ONLY listen on a port if NOT in production (local testing)
+
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 7777;
   app.listen(PORT, () => {
@@ -51,5 +50,5 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// 5. Export for Vercel
+
 module.exports = app;
