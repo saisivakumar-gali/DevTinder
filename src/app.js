@@ -50,4 +50,4 @@ connectDB().then(()=>{
     console.error("database not connected");
 })
 
-
+module.exports=app;
