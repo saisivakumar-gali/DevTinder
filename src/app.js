@@ -12,6 +12,7 @@ const cronRouter = require("./routes/cron");
 
 const app = express();
 
+// 1. Essential Middlewares
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
@@ -21,9 +22,18 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
 }));
 
-// Connect to DB immediately
-connectDB().catch(err => console.error(err));
+// 2. CRITICAL: Database Connection Middleware
+// This stops the 10000ms buffering error by ensuring connection before queries
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (err) {
+        res.status(500).send("Database Connection Error: " + err.message);
+    }
+});
 
+// 3. Routes (Now safe to execute queries)
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
