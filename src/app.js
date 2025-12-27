@@ -3,8 +3,9 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 require("dotenv").config();
 
-const connectDB = require("./config/database");
-const cronRouter = require("./routes/cron"); // IMPORTED
+const cronRouter = require("./routes/cron");
+const authRouter = require("./routes/auth");
+const profileRouter = require("./routes/profile");
 
 const app = express();
 
@@ -17,23 +18,9 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
 }));
 
-// Route Middlewares
-const authRouter = require("./routes/auth");
-const profileRouter = require("./routes/profile");
-const requestRouter = require("./routes/request");
-const userRouter = require("./routes/user");
-
+// Routes
 app.use("/", authRouter);
 app.use("/", profileRouter);
-app.use("/", requestRouter);
-app.use("/", userRouter);
-app.use("/", cronRouter); // MOUNTED
-
-// Initialize Database
-connectDB().catch(err => console.error(err));
-
-if (process.env.NODE_ENV !== "production") {
-  app.listen(process.env.PORT || 7777, () => console.log("Server on 7777"));
-}
+app.use("/", cronRouter); // This handles /api/cron/send-reminders
 
 module.exports = app;
