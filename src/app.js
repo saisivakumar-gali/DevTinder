@@ -3,9 +3,12 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 require("dotenv").config();
 
-const cronRouter = require("./routes/cron");
+const connectDB = require("./config/database");
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
+const requestRouter = require("./routes/request");
+const userRouter = require("./routes/user");
+const cronRouter = require("./routes/cron");
 
 const app = express();
 
@@ -18,9 +21,13 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
 }));
 
-// Routes
+// Connect to DB immediately
+connectDB().catch(err => console.error(err));
+
 app.use("/", authRouter);
 app.use("/", profileRouter);
-app.use("/", cronRouter); // This handles /api/cron/send-reminders
+app.use("/", requestRouter);
+app.use("/", userRouter);
+app.use("/", cronRouter);
 
 module.exports = app;

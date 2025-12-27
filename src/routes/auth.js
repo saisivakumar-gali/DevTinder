@@ -1,76 +1,36 @@
 const express = require("express");
 const authRouter = express.Router();
-const { validateSignUpData } = require("../utils/validation");
-const validator = require("validator");
-const bcrypt = require("bcrypt");
 const User = require("../models/user");
 
-// SIGNUP
-authRouter.post("/signup", async (req, res) => {
-    try {
-        validateSignUpData(req);
-        const { firstName, lastName, emailId, password } = req.body;
-        const passwordHash = await bcrypt.hash(password, 10);
+const COOKIE_OPTIONS = {
+  expires: new Date(Date.now() + 10 * 3600000),
+  httpOnly: true,
+  secure: true, 
+  sameSite: "none",
+};
 
-        const user = new User({
-            firstName,
-            lastName,
-            emailId,
-            password: passwordHash
-        });
-
-        const savedUser = await user.save();
-        const token = await savedUser.getJWT();
-
-        res.cookie("token", token, {
-            expires: new Date(Date.now() + 10 * 3600000),
-            httpOnly: true,
-            secure: true, // Required for Vercel HTTPS
-            sameSite: "none", // Required for cross-domain
-        });
-
-        res.json({ message: "User added successfully", data: savedUser });
-    } catch (err) {
-        res.status(400).send("ERROR: " + err.message);
-    }
-});
-
-// LOGIN
 authRouter.post("/login", async (req, res) => {
-    try {
-        const { emailId, password } = req.body;
-        if (!validator.isEmail(emailId)) throw new Error("Email is not valid");
+  try {
+    const { emailId, password } = req.body;
+    const user = await User.findOne({ emailId });
+    if (!user) throw new Error("Invalid credentials");
 
-        const user = await User.findOne({ emailId: emailId });
-        if (!user) throw new Error("Invalid credentials");
-
-        const ispasswordValid = await user.validatePassword(password);
-        if (ispasswordValid) {
-            const token = await user.getJWT();
-            res.cookie("token", token, {
-                expires: new Date(Date.now() + 10 * 3600000),
-                httpOnly: true,
-                secure: true,
-                sameSite: "none",
-            });
-            res.send(user);
-        } else {
-            throw new Error("Invalid credentials");
-        }
-    } catch (err) {
-        res.status(400).send(err.message);
+    const ispasswordValid = await user.validatePassword(password);
+    if (ispasswordValid) {
+      const token = await user.getJWT();
+      res.cookie("token", token, COOKIE_OPTIONS);
+      res.send(user);
+    } else {
+      throw new Error("Invalid credentials");
     }
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
 });
 
-// LOGOUT - Fixed with security flags
 authRouter.post("/logout", (req, res) => {
-    res.cookie("token", null, {
-        expires: new Date(Date.now()),
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-    });
-    res.send("logout successful!!");
+  res.cookie("token", null, { ...COOKIE_OPTIONS, expires: new Date(0) });
+  res.send("logout successful!!");
 });
 
 module.exports = authRouter;
