@@ -2,8 +2,10 @@ const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 require("dotenv").config();
-
+const http = require("http");
+const { Server } = require("socket.io");
 const connectDB = require("./config/database");
+
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
@@ -11,19 +13,50 @@ const userRouter = require("./routes/user");
 const cronRouter = require("./routes/cron");
 
 const app = express();
+const server = http.createServer(app);
 
-// 1. Essential Middlewares
+// 1. Initialize Socket.io
+// CHANGE: Origin updated to your actual frontend URL
+const io = new Server(server, {
+    cors: {
+        origin: "https://dev-tinder-lemon.vercel.app", 
+        methods: ["GET", "POST"],
+        credentials: true
+    }
+});
+
+// 2. Socket.io Logic
+io.on("connection", (socket) => {
+    console.log("A user connected: " + socket.id);
+
+    socket.on("joinChat", ({ senderId, targetUserId }) => {
+        const roomId = [senderId, targetUserId].sort().join("_");
+        socket.join(roomId);
+        console.log(`User ${senderId} joined room: ${roomId}`);
+    });
+
+    socket.on("sendMessage", ({ senderId, targetUserId, text }) => {
+        const roomId = [senderId, targetUserId].sort().join("_");
+        io.to(roomId).emit("messageReceived", { senderId, text, createdAt: new Date() });
+    });
+
+    socket.on("disconnect", () => {
+        console.log("User disconnected");
+    });
+});
+
+// --- Middlewares ---
 app.use(express.json());
 app.use(cookieParser());
+
+// 3. Update Express CORS to match the frontend
 app.use(cors({
-    origin: "https://dev-tinder-web-dusky.vercel.app",
+    origin: "https://dev-tinder-lemon.vercel.app", 
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
 }));
 
-// 2. CRITICAL: Database Connection Middleware
-// This stops the 10000ms buffering error by ensuring connection before queries
 app.use(async (req, res, next) => {
     try {
         await connectDB();
@@ -33,11 +66,18 @@ app.use(async (req, res, next) => {
     }
 });
 
-// 3. Routes (Now safe to execute queries)
+// --- Routes ---
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
 app.use("/", userRouter);
 app.use("/", cronRouter);
 
-module.exports = app;
+// 4. THE CRITICAL CHANGE FOR RENDER:
+// This keeps the process alive and listening for traffic.
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`🚀 Server is listening on port ${PORT}`);
+});
+
+module.exports = { app, server };
