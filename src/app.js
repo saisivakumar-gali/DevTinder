@@ -19,7 +19,7 @@ const server = http.createServer(app);
 // CHANGE: Origin updated to your actual frontend URL
 const io = new Server(server, {
     cors: {
-        origin: "https://dev-tinder-lemon.vercel.app", 
+        origin: "https://dev-tinder-web-dusky.vercel.app", 
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -51,7 +51,7 @@ app.use(cookieParser());
 
 // 3. Update Express CORS to match the frontend
 app.use(cors({
-    origin: "https://dev-tinder-lemon.vercel.app", 
+    origin: "https://dev-tinder-web-dusky.vercel.app", 
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
