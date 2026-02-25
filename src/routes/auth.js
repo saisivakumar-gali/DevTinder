@@ -1,7 +1,6 @@
 const express = require("express");
 const authRouter = express.Router();
 const User = require("../models/user");
-const bcrypt = require("bcrypt"); // Ensure you have bcrypt installed
 
 const COOKIE_OPTIONS = {
   expires: new Date(Date.now() + 10 * 3600000),
@@ -15,26 +14,23 @@ authRouter.post("/signup", async (req, res) => {
   try {
     const { firstName, lastName, emailId, password, age, gender } = req.body;
 
-    // 1. Check if user already exists
     const existingUser = await User.findOne({ emailId });
     if (existingUser) {
       return res.status(400).send("User already exists with this email.");
     }
 
-    // 2. Create a new instance of the User model
-    // Note: It is best practice to hash the password in the User Schema using a 'pre-save' hook.
+    // Passwords will be auto-hashed by the userSchema.pre("save") hook
     const user = new User({
       firstName,
       lastName,
       emailId,
-      password, // Your schema should handle hashing this
+      password,
       age,
       gender
     });
 
     const savedUser = await user.save();
 
-    // 3. Generate JWT and set cookie so they are logged in immediately
     const token = await savedUser.getJWT();
     res.cookie("token", token, COOKIE_OPTIONS);
 
