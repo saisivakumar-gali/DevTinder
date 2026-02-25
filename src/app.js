@@ -22,7 +22,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: "https://dev-tinder-web-dusky.vercel.app", 
-        methods: ["GET", "POST"],
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         credentials: true
     }
 });
