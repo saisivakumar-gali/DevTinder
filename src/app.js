@@ -7,6 +7,7 @@ const { Server } = require("socket.io");
 const connectDB = require("./config/database");
 const { Chat } = require("./models/chat");
 
+// Route Imports
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
@@ -17,25 +18,40 @@ const chatRouter = require("./routes/chat");
 const app = express();
 const server = http.createServer(app);
 
-// --- 1. GLOBAL CORS CONFIGURATION ---
-// Move this to the very top to handle Preflight requests (OPTIONS) first
+// --- 1. STRICT CORS CONFIGURATION (TOP PRIORITY) ---
+const allowedOrigin = "https://dev-tinder-web-dusky.vercel.app";
+
 app.use(cors({
-    origin: "https://dev-tinder-web-dusky.vercel.app", 
+    origin: allowedOrigin,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
 }));
 
-// --- 2. Initialize Socket.io ---
+// --- 2. MANUAL PREFLIGHT & CREDENTIALS HEADER FIX ---
+// This ensures that even if the 'cors' package misses a header, we force it.
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", allowedOrigin);
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,PATCH");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie");
+    
+    // Immediately terminate OPTIONS requests with a 204 status
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(204);
+    }
+    next();
+});
+
+// --- 3. SOCKET.IO CONFIGURATION ---
 const io = new Server(server, {
     cors: {
-        origin: "https://dev-tinder-web-dusky.vercel.app", 
+        origin: allowedOrigin,
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         credentials: true
     }
 });
 
-// Socket.io Logic
 io.on("connection", (socket) => {
     console.log("A user connected: " + socket.id);
 
@@ -57,7 +73,7 @@ io.on("connection", (socket) => {
             const lastMessage = savedChat.messages[savedChat.messages.length - 1];
             io.to(roomId).emit("messageReceived", { senderId, text, createdAt: lastMessage.createdAt });
         } catch(err) {
-            console.log(err.message);
+            console.log("Socket Error:", err.message);
         }
     });
 
@@ -66,7 +82,7 @@ io.on("connection", (socket) => {
     });
 });
 
-// --- 3. Other Middlewares ---
+// --- 4. STANDARD MIDDLEWARES ---
 app.use(express.json());
 app.use(cookieParser());
 
@@ -80,7 +96,7 @@ app.use(async (req, res, next) => {
     }
 });
 
-// --- 4. Routes ---
+// --- 5. ROUTES ---
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
@@ -88,7 +104,7 @@ app.use("/", userRouter);
 app.use("/", cronRouter);
 app.use("/", chatRouter);
 
-// --- 5. Server Start ---
+// --- 6. SERVER START ---
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 Server is listening on port ${PORT}`);
