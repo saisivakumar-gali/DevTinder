@@ -17,8 +17,16 @@ const chatRouter = require("./routes/chat");
 const app = express();
 const server = http.createServer(app);
 
-// 1. Initialize Socket.io
-// CHANGE: Origin updated to your actual frontend URL
+// --- 1. GLOBAL CORS CONFIGURATION ---
+// Move this to the very top to handle Preflight requests (OPTIONS) first
+app.use(cors({
+    origin: "https://dev-tinder-web-dusky.vercel.app", 
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+}));
+
+// --- 2. Initialize Socket.io ---
 const io = new Server(server, {
     cors: {
         origin: "https://dev-tinder-web-dusky.vercel.app", 
@@ -27,7 +35,7 @@ const io = new Server(server, {
     }
 });
 
-// 2. Socket.io Logic
+// Socket.io Logic
 io.on("connection", (socket) => {
     console.log("A user connected: " + socket.id);
 
@@ -38,27 +46,19 @@ io.on("connection", (socket) => {
     });
 
     socket.on("sendMessage", async ({ senderId, targetUserId, text }) => {
-        
-
-        try{
+        try {
             const roomId = [senderId, targetUserId].sort().join("_");
-            let chat=await Chat.findOne({ participants: { $all: [senderId, targetUserId] } });
+            let chat = await Chat.findOne({ participants: { $all: [senderId, targetUserId] } });
             if(!chat){
-                chat=new Chat({ participants: [senderId, targetUserId], messages: [] });
+                chat = new Chat({ participants: [senderId, targetUserId], messages: [] });
             }
             chat.messages.push({ senderId, text });
             const savedChat = await chat.save();
-
-        // Get the latest message (which now has a createdAt timestamp from MongoDB)
-        const lastMessage = savedChat.messages[savedChat.messages.length - 1];
+            const lastMessage = savedChat.messages[savedChat.messages.length - 1];
             io.to(roomId).emit("messageReceived", { senderId, text, createdAt: lastMessage.createdAt });
-
-        }
-        catch(err){
+        } catch(err) {
             console.log(err.message);
         }
-
-        
     });
 
     socket.on("disconnect", () => {
@@ -66,18 +66,11 @@ io.on("connection", (socket) => {
     });
 });
 
-// --- Middlewares ---
+// --- 3. Other Middlewares ---
 app.use(express.json());
 app.use(cookieParser());
 
-// 3. Update Express CORS to match the frontend
-app.use(cors({
-    origin: "https://dev-tinder-web-dusky.vercel.app", 
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
-}));
-
+// Database connection middleware
 app.use(async (req, res, next) => {
     try {
         await connectDB();
@@ -87,7 +80,7 @@ app.use(async (req, res, next) => {
     }
 });
 
-// --- Routes ---
+// --- 4. Routes ---
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
@@ -95,8 +88,7 @@ app.use("/", userRouter);
 app.use("/", cronRouter);
 app.use("/", chatRouter);
 
-// 4. THE CRITICAL CHANGE FOR RENDER:
-// This keeps the process alive and listening for traffic.
+// --- 5. Server Start ---
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 Server is listening on port ${PORT}`);
