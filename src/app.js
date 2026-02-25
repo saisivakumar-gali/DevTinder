@@ -12,6 +12,7 @@ const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
 const userRouter = require("./routes/user");
 const cronRouter = require("./routes/cron");
+const chatRouter = require("./routes/chat");
 
 const app = express();
 const server = http.createServer(app);
@@ -89,6 +90,7 @@ app.use("/", profileRouter);
 app.use("/", requestRouter);
 app.use("/", userRouter);
 app.use("/", cronRouter);
+app.use("/", chatRouter);
 
 // 4. THE CRITICAL CHANGE FOR RENDER:
 // This keeps the process alive and listening for traffic.
