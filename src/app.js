@@ -20,7 +20,7 @@ const server = http.createServer(app);
 
 const allowedOrigin = "https://dev-tinder-web-dusky.vercel.app";
 
-// --- CORS CONFIGURATION ---
+// --- 1. GLOBAL CORS (CRITICAL ORDER) ---
 app.use(cors({
     origin: allowedOrigin,
     credentials: true,
@@ -28,65 +28,30 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
 }));
 
-// Manual fix for strict browser preflights
+// --- 2. MANUAL PREFLIGHT HANDLER ---
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", allowedOrigin);
     res.header("Access-Control-Allow-Credentials", "true");
     res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,PATCH");
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie");
-    if (req.method === "OPTIONS") {
-        return res.sendStatus(204);
-    }
+    if (req.method === "OPTIONS") return res.sendStatus(204);
     next();
-});
-
-// --- SOCKET.IO ---
-const io = new Server(server, {
-    cors: {
-        origin: allowedOrigin,
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-        credentials: true
-    }
-});
-
-io.on("connection", (socket) => {
-    console.log("A user connected: " + socket.id);
-    socket.on("joinChat", ({ senderId, targetUserId }) => {
-        const roomId = [senderId, targetUserId].sort().join("_");
-        socket.join(roomId);
-    });
-    socket.on("sendMessage", async ({ senderId, targetUserId, text }) => {
-        try {
-            const roomId = [senderId, targetUserId].sort().join("_");
-            let chat = await Chat.findOne({ participants: { $all: [senderId, targetUserId] } });
-            if(!chat){
-                chat = new Chat({ participants: [senderId, targetUserId], messages: [] });
-            }
-            chat.messages.push({ senderId, text });
-            const savedChat = await chat.save();
-            const lastMessage = savedChat.messages[savedChat.messages.length - 1];
-            io.to(roomId).emit("messageReceived", { senderId, text, createdAt: lastMessage.createdAt });
-        } catch(err) {
-            console.log("Socket Error:", err.message);
-        }
-    });
-    socket.on("disconnect", () => {
-        console.log("User disconnected");
-    });
 });
 
 app.use(express.json());
 app.use(cookieParser());
 
+// Database connection
 app.use(async (req, res, next) => {
     try {
         await connectDB();
         next();
     } catch (err) {
-        res.status(500).send("Database Connection Error: " + err.message);
+        res.status(500).send("Database Error: " + err.message);
     }
 });
 
+// Routes
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
@@ -96,7 +61,7 @@ app.use("/", chatRouter);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`🚀 Server is listening on port ${PORT}`);
+    console.log(`🚀 Server listening on port ${PORT}`);
 });
 
 module.exports = { app, server };

@@ -69,16 +69,17 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// --- PASSWORD HASHING HOOK ---
-userSchema.pre("save", async function (next) {
+// --- FIXED PASSWORD HASHING HOOK ---
+userSchema.pre("save", async function () {
     const user = this;
-    if (!user.isModified("password")) return next();
+    // Only hash if the password has been modified (or is new)
+    if (!user.isModified("password")) return;
+
     try {
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(user.password, salt);
-        next();
     } catch (err) {
-        next(err);
+        throw new Error("Hashing failed: " + err.message);
     }
 });
 
@@ -90,6 +91,7 @@ userSchema.methods.getJWT = async function () {
 
 userSchema.methods.validatePassword = async function (inputPassword) {
     const user = this;
+    // Bcrypt compare handles the hash and salt internally
     return await bcrypt.compare(inputPassword, user.password);
 }
 
