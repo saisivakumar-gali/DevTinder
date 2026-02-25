@@ -20,7 +20,7 @@ const server = http.createServer(app);
 
 const allowedOrigin = "https://dev-tinder-web-dusky.vercel.app";
 
-// --- 1. GLOBAL CORS (CRITICAL ORDER) ---
+// --- 1. GLOBAL CORS ---
 app.use(cors({
     origin: allowedOrigin,
     credentials: true,
@@ -38,6 +38,48 @@ app.use((req, res, next) => {
     next();
 });
 
+// --- 3. SOCKET.IO CONFIGURATION (RESTORED & FIXED) ---
+const io = new Server(server, {
+    cors: {
+        origin: allowedOrigin,
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    // Fix for Render: allows polling fallback before upgrading to websocket
+    transports: ["polling", "websocket"] 
+});
+
+io.on("connection", (socket) => {
+    console.log("A user connected: " + socket.id);
+
+    socket.on("joinChat", ({ senderId, targetUserId }) => {
+        const roomId = [senderId, targetUserId].sort().join("_");
+        socket.join(roomId);
+        console.log(`User ${senderId} joined room: ${roomId}`);
+    });
+
+    socket.on("sendMessage", async ({ senderId, targetUserId, text }) => {
+        try {
+            const roomId = [senderId, targetUserId].sort().join("_");
+            let chat = await Chat.findOne({ participants: { $all: [senderId, targetUserId] } });
+            if(!chat){
+                chat = new Chat({ participants: [senderId, targetUserId], messages: [] });
+            }
+            chat.messages.push({ senderId, text });
+            const savedChat = await chat.save();
+            const lastMessage = savedChat.messages[savedChat.messages.length - 1];
+            io.to(roomId).emit("messageReceived", { senderId, text, createdAt: lastMessage.createdAt });
+        } catch(err) {
+            console.log("Socket Error:", err.message);
+        }
+    });
+
+    socket.on("disconnect", () => {
+        console.log("User disconnected");
+    });
+});
+
+// --- 4. MIDDLEWARES ---
 app.use(express.json());
 app.use(cookieParser());
 
@@ -51,7 +93,7 @@ app.use(async (req, res, next) => {
     }
 });
 
-// Routes
+// --- 5. ROUTES ---
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
