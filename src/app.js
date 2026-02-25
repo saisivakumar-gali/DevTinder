@@ -35,9 +35,25 @@ io.on("connection", (socket) => {
         console.log(`User ${senderId} joined room: ${roomId}`);
     });
 
-    socket.on("sendMessage", ({ senderId, targetUserId, text }) => {
-        const roomId = [senderId, targetUserId].sort().join("_");
-        io.to(roomId).emit("messageReceived", { senderId, text, createdAt: new Date() });
+    socket.on("sendMessage", async ({ senderId, targetUserId, text }) => {
+        
+
+        try{
+            const roomId = [senderId, targetUserId].sort().join("_");
+            let chat=await Chat.findOne({ participants: { $all: [senderId, targetUserId] } });
+            if(!chat){
+                chat=new Chat({ participants: [senderId, targetUserId], messages: [] });
+            }
+            chat.messages.push({ senderId, text });
+            await chat.save();
+            io.to(roomId).emit("messageReceived", { senderId, text, createdAt: new Date() });
+
+        }
+        catch(err){
+            console.log(err.message);
+        }
+
+        
     });
 
     socket.on("disconnect", () => {
