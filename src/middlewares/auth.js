@@ -13,7 +13,7 @@ const userAuth = async (req, res, next) => {
         
         const user = await User.findById(_id);
         if (!user) {
-            throw new Error("User not found");
+            return res.status(401).send("Please Login Again.");
         }
         
         req.user = user;
