@@ -47,8 +47,11 @@ io.on("connection", (socket) => {
                 chat=new Chat({ participants: [senderId, targetUserId], messages: [] });
             }
             chat.messages.push({ senderId, text });
-            await chat.save();
-            io.to(roomId).emit("messageReceived", { senderId, text, createdAt: new Date() });
+            const savedChat = await chat.save();
+
+        // Get the latest message (which now has a createdAt timestamp from MongoDB)
+        const lastMessage = savedChat.messages[savedChat.messages.length - 1];
+            io.to(roomId).emit("messageReceived", { senderId, text, createdAt: lastMessage.createdAt });
 
         }
         catch(err){
